@@ -1,9 +1,21 @@
 from azureml.core import Workspace, Model
+from dotenv import load_dotenv
+import os
+
+from azureml.core import Environment
+from azureml.core.webservice import AciWebservice
+from azureml.core.environment import Environment
+from azureml.core.webservice import Webservice
+from azureml.core import Workspace, ScriptRunConfig, Environment
+from azureml.core import Environment
+from azureml.core.conda_dependencies import CondaDependencies
+
+from azureml.core.model import InferenceConfig
 
 # Datos de conexión
-subscription_id = 'd1bea4f5-48e7-4a5b-a667-f228cb71d697'
-resource_group = 'proyectofinalia'
-workspace_name = 'Proyecto-Final-IA'
+subscription_id = os.getenv('SUBSCRIPTION_ID')
+resource_group = os.getenv('RESOURCE_GROUP')
+workspace_name = os.getenv('WORKSPACE_NAME')
 
 # Conectar al espacio de trabajo|
 ws = Workspace(subscription_id=subscription_id,
@@ -15,56 +27,41 @@ model = Model.register(workspace=ws,
                        model_path="C:/Users/epera/OneDrive/Escritorio/ProjectAI/demo/svd_model.pkl",  # Ruta local del modelo
                        model_name="recom")
 
-
-
-
-from azureml.core import Environment
-
-# Crear el objeto de entorno
+# Crear un objeto de un entorno para entrenar el modelo
 env = Environment.from_conda_specification(name='myenv', file_path='C:/Users/epera/OneDrive/Escritorio/ProjectAI/demo/conda_dependencies.yml')
 
-# Registrar el entorno
+# Registramos el entorno en el que se subira el modelo para el despliegue
 env.register(workspace=ws)
 
-
-from azureml.core.webservice import AciWebservice
-from azureml.core.environment import Environment
-from azureml.core.webservice import Webservice
-from azureml.core import Workspace, ScriptRunConfig, Environment
-
-
 # Crear el objeto de entorno
 env = Environment.from_conda_specification(name='myenv', file_path='C:/Users/epera/OneDrive/Escritorio/ProjectAI/demo/conda_dependencies.yml')
 
-# Configurar el servicio web
+#configuirar el deploy para el servicion en azure
 aci_config = AciWebservice.deploy_configuration(cpu_cores=1, memory_gb=1)
 
 
-from azureml.core import Environment
-from azureml.core.conda_dependencies import CondaDependencies
 
-# Crear un entorno
+# Creamos el entorno nuevamente con nuestro nombre de my-environment
 my_environment = Environment(name="my-environment")
 conda_dep = CondaDependencies()
 
-# Agregar las dependencias necesarias
+# Agregar las dependencias necesarias al entorno registrado
 conda_dep.add_pip_package("azureml-core")
 conda_dep.add_pip_package("scikit-learn")
 conda_dep.add_pip_package("numpy")
 
-# Agregar las dependencias al entorno
+# agregar otras las dependencias al entorno
 my_environment.python.conda_dependencies = conda_dep
 
 
-from azureml.core.model import InferenceConfig
 
-# Crear la configuración de inferencia
+# Crear la configuración de inferencia para poder predicir con el modelo mediante el archivo del scoring.py
 inference_config = InferenceConfig(
     entry_script="score.py",
     environment=my_environment
 )
 
-# Desplegar el modelo
+# Desplegar el modelo dentro de nuestro servicio, le pasamos las instancias necesarias como la inferencia etc
 service = Model.deploy(
     workspace=ws,
     name="my-service",
@@ -73,8 +70,10 @@ service = Model.deploy(
     deployment_config=aci_config,
     overwrite=True
 )
-# Esperar a que se complete el despliegue
+
+# esperamos a que se complete el despliegue
 service.wait_for_deployment(show_output=True)
 
+#Imprimimos mensajes de informacion acerca del despliegue
 print(f"Service state: {service.state}")
 print(f"Scoring URI: {service.scoring_uri}")

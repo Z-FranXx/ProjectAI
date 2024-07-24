@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "myapp"
+    "users"
 ]
 
 MIDDLEWARE = [
@@ -69,6 +69,11 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'demo.wsgi.application'
+
+
+
+AUTH_USER_MODEL = "users.User"
+LOGIN_URL = '/singin/'
 
 
 # Database
